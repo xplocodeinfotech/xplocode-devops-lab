@@ -1,0 +1,147 @@
+openapi: 3.0.3
+info:
+  title: XploCode Student Management API
+  version: 0.1.0
+  description: Initial frontend baseline. No backend is implemented yet. See CONTRACT.md.
+security:
+  - bearerAuth: []
+paths:
+  /api/auth/login:
+    post:
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string, minLength: 1, maxLength: 100 }
+                password: { type: string, minLength: 1, writeOnly: true }
+      responses:
+        '200':
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token, expiresIn, user]
+                properties:
+                  token: { type: string }
+                  expiresIn: { type: integer, minimum: 1 }
+                  user:
+                    type: object
+                    required: [username]
+                    properties:
+                      username: { type: string }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+  /api/students:
+    get:
+      operationId: listStudents
+      responses:
+        '200':
+          description: All students
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Student' }
+        '401': { $ref: '#/components/responses/Error' }
+    post:
+      operationId: createStudent
+      requestBody: { $ref: '#/components/requestBodies/StudentInput' }
+      responses:
+        '201': { $ref: '#/components/responses/Student' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/students/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+    get:
+      operationId: getStudent
+      responses:
+        '200': { $ref: '#/components/responses/Student' }
+        '401': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    put:
+      operationId: updateStudent
+      requestBody: { $ref: '#/components/requestBodies/StudentInput' }
+      responses:
+        '200': { $ref: '#/components/responses/Student' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+    delete:
+      operationId: deleteStudent
+      responses:
+        '204': { description: Student deleted; empty response }
+        '401': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /api/health:
+    get:
+      operationId: health
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, enum: [ok] }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    StudentInput:
+      type: object
+      required: [name, email, department, year]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        email: { type: string, format: email, maxLength: 254 }
+        department: { type: string, minLength: 1, maxLength: 100 }
+        year: { type: integer, minimum: 1, maximum: 4 }
+    Student:
+      allOf:
+        - { $ref: '#/components/schemas/StudentInput' }
+        - type: object
+          required: [id]
+          properties:
+            id: { type: integer, minimum: 1 }
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+  requestBodies:
+    StudentInput:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/StudentInput' }
+  responses:
+    Student:
+      description: Student record
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Student' }
+    Error:
+      description: Request failed; see CONTRACT.md for status semantics
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }

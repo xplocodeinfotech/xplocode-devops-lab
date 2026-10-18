@@ -1,0 +1,5 @@
+{
+  "mode": "demo",
+  "apiBaseUrl": "http://localhost:8080",
+  "requestTimeoutMs": 15000
+}
