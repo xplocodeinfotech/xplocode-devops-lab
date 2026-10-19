@@ -2,13 +2,20 @@ openapi: 3.0.3
 info:
   title: XploCode Student Management API
   version: 0.1.0
-  description: Initial frontend baseline. No backend is implemented yet. See CONTRACT.md.
+  description: |
+    Initial frontend baseline. No backend is implemented yet. See CONTRACT.md.
+    Browsers call the API cross-origin, so every backend must answer CORS preflight (OPTIONS)
+    for an allowlist of origins (never `*`) and allow the Authorization and Content-Type headers.
+servers:
+  - url: http://localhost:8080
+    description: Local development. Deployed backends use the apiBaseUrl from the frontend config.json.
 security:
   - bearerAuth: []
 paths:
   /api/auth/login:
     post:
       operationId: login
+      summary: Authenticate and receive a JWT
       security: []
       requestBody:
         required: true
@@ -38,9 +45,11 @@ paths:
                       username: { type: string }
         '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
+        '500': { $ref: '#/components/responses/Error' }
   /api/students:
     get:
       operationId: listStudents
+      summary: List all students
       responses:
         '200':
           description: All students
@@ -50,14 +59,17 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/Student' }
         '401': { $ref: '#/components/responses/Error' }
+        '500': { $ref: '#/components/responses/Error' }
     post:
       operationId: createStudent
+      summary: Add a student
       requestBody: { $ref: '#/components/requestBodies/StudentInput' }
       responses:
         '201': { $ref: '#/components/responses/Student' }
         '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
         '409': { $ref: '#/components/responses/Error' }
+        '500': { $ref: '#/components/responses/Error' }
   /api/students/{id}:
     parameters:
       - name: id
@@ -66,12 +78,15 @@ paths:
         schema: { type: integer, minimum: 1 }
     get:
       operationId: getStudent
+      summary: Get one student
       responses:
         '200': { $ref: '#/components/responses/Student' }
         '401': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
+        '500': { $ref: '#/components/responses/Error' }
     put:
       operationId: updateStudent
+      summary: Update a student
       requestBody: { $ref: '#/components/requestBodies/StudentInput' }
       responses:
         '200': { $ref: '#/components/responses/Student' }
@@ -79,15 +94,19 @@ paths:
         '401': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
         '409': { $ref: '#/components/responses/Error' }
+        '500': { $ref: '#/components/responses/Error' }
     delete:
       operationId: deleteStudent
+      summary: Delete a student
       responses:
         '204': { description: Student deleted; empty response }
         '401': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
+        '500': { $ref: '#/components/responses/Error' }
   /api/health:
     get:
       operationId: health
+      summary: Health check
       security: []
       responses:
         '200':
@@ -99,6 +118,7 @@ paths:
                 required: [status]
                 properties:
                   status: { type: string, enum: [ok] }
+        '500': { $ref: '#/components/responses/Error' }
 components:
   securitySchemes:
     bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }

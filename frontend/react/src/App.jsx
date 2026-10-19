@@ -1,18 +1,36 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { createApi } from './api.js';
 import { createDemoApi } from './demo.js';
 
 const emptyStudent = { name: '', email: '', department: '', year: 1 };
 const initials = (name) => name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+const logoUrl = `${import.meta.env?.BASE_URL ?? '/'}brand/xplocode-logo.png`;
 
-function StudentDialog({ action, api, onClose, onSaved, onDeleted }) {
+function Brand() {
+  return <Link className="brand" to="/students" aria-label="XploCode home"><img src={logoUrl} alt="" width="55" height="55" /><span className="brand-name">XploCode</span></Link>;
+}
+
+function StudentDialog({ mode, api, onSaved, onDeleted }) {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const dialog = useRef(null);
-  const [student, setStudent] = useState(action.student || emptyStudent);
+  const [student, setStudent] = useState(mode === 'add' ? emptyStudent : null);
+  const [loadError, setLoadError] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const readOnly = action.type === 'view';
-  const deleting = action.type === 'delete';
+  const readOnly = mode === 'view';
+  const deleting = mode === 'delete';
+  const close = () => { if (!busy) navigate('/students'); };
   useEffect(() => { dialog.current.showModal(); }, []);
+  useEffect(() => {
+    if (mode === 'add') return undefined;
+    let live = true;
+    const numericId = Number(id);
+    if (!Number.isInteger(numericId) || numericId < 1) { setLoadError('This is not a valid student ID.'); return undefined; }
+    api.get(numericId).then((record) => { if (live) setStudent(record); }).catch((failure) => { if (live) setLoadError(failure.message); });
+    return () => { live = false; };
+  }, [mode, id, api]);
   const change = (event) => setStudent({ ...student, [event.target.name]: event.target.value });
   async function submit(event) {
     event.preventDefault(); setError(''); setBusy(true);
@@ -20,57 +38,64 @@ function StudentDialog({ action, api, onClose, onSaved, onDeleted }) {
       if (deleting) { await api.remove(student.id); onDeleted(student.id); return; }
       const data = { name: student.name.trim(), email: student.email.trim(), department: student.department.trim(), year: Number(student.year) };
       if (!data.name || !data.department) throw new Error('Name and department cannot be blank.');
-      const saved = action.type === 'add' ? await api.create(data) : await api.update(student.id, data);
-      onSaved(saved, action.type);
+      const saved = mode === 'add' ? await api.create(data) : await api.update(student.id, data);
+      onSaved(saved, mode);
     } catch (failure) { setError(failure.message); } finally { setBusy(false); }
   }
-  return <dialog ref={dialog} onCancel={(event) => { event.preventDefault(); if (!busy) onClose(); }} aria-labelledby="dialog-title">
-    <div className="dialog-heading"><div><p className="eyebrow">STUDENT RECORD</p><h2 id="dialog-title">{deleting ? 'Delete student?' : readOnly ? 'Student details' : action.type === 'add' ? 'Add a student' : 'Edit student'}</h2></div><button type="button" className="icon-button" aria-label="Close dialog" disabled={busy} onClick={onClose}>×</button></div>
-    {deleting ? <form onSubmit={submit}><p>Delete <strong>{student.name}</strong>? This action cannot be undone.</p>{error && <p className="error" role="alert">{error}</p>}<div className="dialog-actions"><button type="button" className="secondary" disabled={busy} onClick={onClose}>Cancel</button><button className="danger" disabled={busy}>{busy ? 'Deleting…' : 'Delete student'}</button></div></form>
+  const title = deleting ? 'Delete student?' : readOnly ? 'Student details' : mode === 'add' ? 'Add a student' : 'Edit student';
+  const years = student ? [...new Set([1, 2, 3, 4, Number(student.year)])].filter(Number.isInteger).sort((a, b) => a - b) : [];
+  return <dialog ref={dialog} onCancel={(event) => { event.preventDefault(); close(); }} aria-labelledby="dialog-title">
+    <div className="dialog-heading"><div><p className="eyebrow">Student record</p><h2 id="dialog-title">{title}</h2></div><button type="button" className="icon-button" aria-label="Close dialog" disabled={busy} onClick={close}>×</button></div>
+    {loadError ? <><p className="error" role="alert">{loadError}</p><div className="dialog-actions"><button type="button" className="secondary" onClick={close}>Close</button></div></>
+      : !student ? <p className="muted" role="status">Loading student…</p>
+      : deleting ? <form onSubmit={submit}><p>Delete <strong>{student.name}</strong>? This action cannot be undone.</p>{error && <p className="error" role="alert">{error}</p>}<div className="dialog-actions"><button type="button" className="secondary" disabled={busy} onClick={close}>Cancel</button><button className="danger" disabled={busy}>{busy ? 'Deleting…' : 'Delete student'}</button></div></form>
       : <form onSubmit={submit}>
         {readOnly && <p className="record-id">Student ID · {student.id}</p>}
-        <label>Full name<input name="name" value={student.name} onChange={change} required maxLength={100} readOnly={readOnly} autoComplete="name" autoFocus /></label>
+        <label>Full name<input name="name" value={student.name} onChange={change} required maxLength={100} readOnly={readOnly} autoComplete="name" autoFocus={!readOnly} /></label>
         <label>Email address<input name="email" type="email" value={student.email} onChange={change} required maxLength={254} readOnly={readOnly} autoComplete="email" /></label>
-        <div className="form-grid"><label>Department<input name="department" value={student.department} onChange={change} required maxLength={100} readOnly={readOnly} placeholder="e.g. CSE" /></label><label>Year<select name="year" value={student.year} onChange={change} disabled={readOnly}>{[1, 2, 3, 4].map((year) => <option key={year} value={year}>Year {year}</option>)}</select></label></div>
+        <div className="form-grid"><label>Department<input name="department" value={student.department} onChange={change} required maxLength={100} readOnly={readOnly} placeholder="e.g. CSE" /></label><label>Year<select name="year" value={student.year} onChange={change} disabled={readOnly}>{years.map((year) => <option key={year} value={year}>Year {year}</option>)}</select></label></div>
         {error && <p className="error" role="alert">{error}</p>}
-        <div className="dialog-actions"><button type="button" className="secondary" disabled={busy} onClick={onClose}>{readOnly ? 'Close' : 'Cancel'}</button>{!readOnly && <button disabled={busy}>{busy ? 'Saving…' : 'Save student'}</button>}</div>
+        <div className="dialog-actions"><button type="button" className="secondary" disabled={busy} onClick={close}>{readOnly ? 'Close' : 'Cancel'}</button>{!readOnly && <button disabled={busy}>{busy ? 'Saving…' : 'Save student'}</button>}</div>
       </form>}
   </dialog>;
 }
 
 function Login({ demo, api, onLogin, message }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   async function submit(event) {
     event.preventDefault(); setBusy(true); setError('');
-    try { onLogin(await api.login(username.trim(), password)); }
-    catch (failure) { setError(failure.message); } finally { setBusy(false); }
+    try {
+      onLogin(await api.login(username.trim(), password));
+      navigate(location.state?.from || '/students', { replace: true });
+    } catch (failure) { setError(failure.message); setBusy(false); }
   }
   return <main className="login-layout">
-    <section className="login-story"><a className="brand" href="#"><span className="brand-mark">X</span>XploCode<span className="brand-dot">.</span></a><div><p className="eyebrow">LEARN. BUILD. DEPLOY.</p><h1>Small beginnings.<br />Real possibilities.</h1><p>Your student workspace for learning how real applications come together, one step at a time.</p></div><span className="story-footer">XPLOCODE INFOTECH · COLLEGE WORKSHOPS</span></section>
-    <section className="login-panel"><div className="login-card"><p className="eyebrow">STUDENT MANAGEMENT</p><h2>Welcome to your workspace</h2><p className="muted">{demo ? 'Explore the frontend with a few sample student records.' : 'Sign in to manage your student records.'}</p>
+    <section className="login-story"><Brand /><div><p className="eyebrow">Discover your coding potential</p><h1>Student Management</h1><p>A small, real application for learning how a frontend, an API and a database work together.</p></div><span className="story-footer">XploCode Infotech · College workshops</span></section>
+    <section className="login-panel"><div className="login-card"><p className="eyebrow">Sign in</p><h2>Welcome back</h2><p className="muted">Sign in to manage your student records.</p>
+      {demo && <div className="demo-note"><strong>Demo mode</strong><p>No backend is connected. Enter any username and password; records are sample data held in memory.</p></div>}
       {message && <p className="error" role="alert">{message}</p>}
-      <form onSubmit={submit}>{demo ? <div className="demo-note"><strong>Frontend demo</strong><p>No account or password is needed. Changes stay in memory and reset when you refresh. Real authentication will be connected in the backend step.</p></div> : <><label>Username<input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required maxLength={100} autoFocus /></label><label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /></label></>}
-        {error && <p className="error" role="alert">{error}</p>}<button className="full-width" disabled={busy}>{busy ? 'Opening workspace…' : demo ? 'Open demo workspace →' : 'Sign in →'}</button>
-      </form><p className="login-footnote">Built for learning. Ready for your next step.</p></div></section>
+      <form onSubmit={submit}>
+        <label>Username<input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required maxLength={100} autoFocus /></label>
+        <label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /></label>
+        {error && <p className="error" role="alert">{error}</p>}
+        <button className="full-width" disabled={busy}>{busy ? 'Signing in…' : 'Login'}</button>
+      </form></div></section>
   </main>;
 }
 
-export function App({ config }) {
-  const demo = config.mode === 'demo';
-  const [user, setUser] = useState(null);
-  const [sessionMessage, setSessionMessage] = useState('');
-  const api = useMemo(() => demo ? createDemoApi() : createApi(config, { onUnauthorized: () => { setUser(null); setStudents([]); setAction(null); setNotice(''); setError(''); setSessionMessage('Your session has expired. Please sign in again.'); } }), [config, demo]);
+function Students({ api, demo, user, onLogout }) {
+  const navigate = useNavigate();
   const [students, setStudents] = useState([]);
   const [query, setQuery] = useState('');
   const [department, setDepartment] = useState('all');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const [action, setAction] = useState(null);
-  const [opening, setOpening] = useState(false);
   async function refresh() {
     setLoading(true); setError('');
     try {
@@ -79,29 +104,47 @@ export function App({ config }) {
       setStudents(records);
     } catch (failure) { setError(failure.message); } finally { setLoading(false); }
   }
-  useEffect(() => { if (user) refresh(); }, [user, api]);
-  async function openRecord(type, student) {
-    setError(''); setOpening(true);
-    try { setAction({ type, student: await api.get(student.id) }); }
-    catch (failure) { setError(failure.message); } finally { setOpening(false); }
-  }
-  function logout() { api.logout(); setUser(null); setStudents([]); setAction(null); setQuery(''); setDepartment('all'); setError(''); setNotice(''); setSessionMessage(''); }
-  if (!user) return <Login demo={demo} api={api} message={sessionMessage} onLogin={(account) => { setSessionMessage(''); setUser(account); }} />;
+  useEffect(() => { refresh(); }, [api]);
   const departments = [...new Set(students.map((student) => student.department))].sort();
   const visible = students.filter((student) => (department === 'all' || student.department === department) && `${student.name} ${student.email} ${student.id}`.toLowerCase().includes(query.toLowerCase()));
+  const saved = (student, type) => {
+    setStudents((current) => type === 'add' ? [...current, student] : current.map((item) => item.id === student.id ? student : item));
+    setNotice(type === 'add' ? 'Student added successfully.' : 'Student updated successfully.'); setError(''); navigate('/students');
+  };
+  const deleted = (id) => { setStudents((current) => current.filter((item) => item.id !== id)); setNotice('Student deleted successfully.'); setError(''); navigate('/students'); };
   return <div className="workspace">
-    <aside className="sidebar"><a className="brand" href="#"><span className="brand-mark">X</span>XploCode<span className="brand-dot">.</span></a><div className="workspace-label">COLLEGE WORKSPACE</div><nav aria-label="Main navigation"><a href="#" className="nav-active" aria-current="page"><span aria-hidden="true">▦</span> Students<span className="nav-count">{students.length}</span></a></nav><div className="sidebar-bottom"><div className="workshop-label"><span className="status-dot" />Workshop edition</div><p>Learn by building something real.</p></div></aside>
-    <div className="main-shell"><header className="topbar"><span>Workspace <span className="breadcrumb">/</span> <strong>Students</strong></span><div className="account"><span className="account-avatar">{initials(user.username)}</span><span>{user.username}</span><button className="text-button" onClick={logout}>Log out</button></div></header>
-      <main className="content"><div className="page-heading"><div><p className="eyebrow">YOUR COLLEGE, CONNECTED</p><h1>Student directory<span className="heading-dot">.</span></h1><p className="muted">A little organization. More room to learn.</p></div><button onClick={() => { setNotice(''); setAction({ type: 'add' }); }}>＋ Add student</button></div>
-        {demo && <div className="demo-banner"><span className="demo-pill">DEMO</span><span>You're exploring the frontend. Records reset on refresh; no backend is connected.</span></div>}
-        <section className="stats" aria-label="Directory overview"><div className="stat-card"><span>Total students</span><strong>{students.length.toString().padStart(2, '0')}</strong><small>People in your directory</small></div><div className="stat-card"><span>Departments</span><strong>{departments.length.toString().padStart(2, '0')}</strong><small>Different paths, shared potential</small></div><div className="stat-card stat-accent"><span>Learning together</span><strong>One workspace.</strong><small>Every student has a place here.</small></div></section>
-        <section className="directory" aria-labelledby="directory-title"><div className="directory-heading"><div><h2 id="directory-title">All students <span className="count-badge">{students.length}</span></h2><p className="muted">View and manage your student records.</p></div><button className="secondary" onClick={refresh} disabled={loading}>{loading ? 'Refreshing…' : '↻ Refresh'}</button></div>
-          <div className="toolbar"><label className="search-label"><span className="sr-only">Search students</span><input type="search" placeholder="Search by name, email or ID…" value={query} onChange={(event) => setQuery(event.target.value)} /></label><label className="filter-label"><span className="sr-only">Filter by department</span><select value={department} onChange={(event) => setDepartment(event.target.value)}><option value="all">All departments</option>{departments.map((item) => <option key={item}>{item}</option>)}</select></label></div>
-          {notice && <p className="success" role="status">{notice}</p>}{error && <p className="error" role="alert">{error}</p>}
-          {loading ? <div className="empty-state" role="status">Loading student records…</div> : error ? <div className="empty-state">Unable to load or update records. Check the error above and refresh before repeating a change.</div> : <><div className="table-scroll"><table><thead><tr><th scope="col">Student</th><th scope="col">Department</th><th scope="col">Year</th><th scope="col">Student ID</th><th scope="col" className="actions-heading">Actions</th></tr></thead><tbody>{visible.map((student) => <tr key={student.id}><td><div className="student-cell"><span className="student-avatar">{initials(student.name)}</span><div><strong>{student.name}</strong><span>{student.email}</span></div></div></td><td><span className="department-badge">{student.department}</span></td><td>Year {student.year}</td><td className="id-cell">#{String(student.id).padStart(3, '0')}</td><td><div className="row-actions"><button className="text-button" disabled={opening} aria-label={`View ${student.name}`} onClick={() => openRecord('view', student)}>View</button><button className="text-button" disabled={opening} aria-label={`Edit ${student.name}`} onClick={() => openRecord('edit', student)}>Edit</button><button className="text-button delete-link" disabled={opening} aria-label={`Delete ${student.name}`} onClick={() => setAction({ type: 'delete', student })}>Delete</button></div></td></tr>)}</tbody></table></div>{visible.length === 0 && <div className="empty-state"><strong>{students.length ? 'No matching students' : 'Your directory starts here'}</strong><p>{students.length ? 'Try a different search or department.' : 'Add your first student to get started.'}</p></div>}</>}
-          <div className="table-footer">Showing {error || loading ? '—' : visible.length} of {students.length} students<span>Made for your next chapter.</span></div>
-        </section><footer className="page-footer">XploCode Infotech Private Limited<span>Student Management · Workshop project</span></footer>
-      </main>
-    </div>{action && <StudentDialog action={action} api={api} onClose={() => setAction(null)} onSaved={(student, type) => { setStudents((current) => type === 'add' ? [...current, student] : current.map((item) => item.id === student.id ? student : item)); setAction(null); setNotice(type === 'add' ? 'Student added successfully.' : 'Student updated successfully.'); setError(''); }} onDeleted={(id) => { setStudents((current) => current.filter((item) => item.id !== id)); setAction(null); setNotice('Student deleted successfully.'); setError(''); }} />}
+    <header className="topbar"><Brand /><div className="account"><span className="account-avatar">{initials(user.username)}</span><span className="account-name">{user.username}</span><button className="secondary" onClick={onLogout}>Logout</button></div></header>
+    <main className="content">
+      <div className="page-heading"><div><p className="eyebrow">Student management</p><h1>Student directory</h1><p className="muted">View, add, edit and remove student records.</p></div><Link className="button" to="/students/new" onClick={() => setNotice('')}>＋ Add student</Link></div>
+      {demo && <div className="demo-banner"><span className="demo-pill">Demo</span><span>Sample data held in memory. Records reset on refresh; no backend is connected.</span></div>}
+      <section className="stats" aria-label="Directory overview"><div className="stat-card"><span>Total students</span><strong>{students.length}</strong></div><div className="stat-card"><span>Departments</span><strong>{departments.length}</strong></div></section>
+      <section className="directory" aria-labelledby="directory-title"><div className="directory-heading"><h2 id="directory-title">All students <span className="count-badge">{students.length}</span></h2><button className="secondary" onClick={refresh} disabled={loading}>{loading ? 'Refreshing…' : '↻ Refresh'}</button></div>
+        <div className="toolbar"><label className="search-label"><span className="sr-only">Search students</span><input type="search" placeholder="Search by name, email or ID…" value={query} onChange={(event) => setQuery(event.target.value)} /></label><label className="filter-label"><span className="sr-only">Filter by department</span><select value={department} onChange={(event) => setDepartment(event.target.value)}><option value="all">All departments</option>{departments.map((item) => <option key={item}>{item}</option>)}</select></label></div>
+        {notice && <p className="success" role="status">{notice}</p>}{error && <p className="error" role="alert">{error}</p>}
+        {loading ? <div className="empty-state" role="status">Loading student records…</div> : error ? <div className="empty-state">Unable to load or update records. Check the error above and refresh before repeating a change.</div> : <><div className="table-scroll"><table><thead><tr><th scope="col">Student</th><th scope="col">Department</th><th scope="col">Year</th><th scope="col">Student ID</th><th scope="col" className="actions-heading">Actions</th></tr></thead><tbody>{visible.map((student) => <tr key={student.id}><td><div className="student-cell"><span className="student-avatar">{initials(student.name)}</span><div><strong>{student.name}</strong><span>{student.email}</span></div></div></td><td><span className="department-badge">{student.department}</span></td><td>Year {student.year}</td><td className="id-cell">#{String(student.id).padStart(3, '0')}</td><td><div className="row-actions"><Link className="text-button" aria-label={`View ${student.name}`} to={`/students/${student.id}`}>View</Link><Link className="text-button" aria-label={`Edit ${student.name}`} to={`/students/${student.id}/edit`}>Edit</Link><Link className="text-button delete-link" aria-label={`Delete ${student.name}`} to={`/students/${student.id}/delete`}>Delete</Link></div></td></tr>)}</tbody></table></div>{visible.length === 0 && <div className="empty-state"><strong>{students.length ? 'No matching students' : 'No students yet'}</strong><p>{students.length ? 'Try a different search or department.' : 'Add your first student to get started.'}</p></div>}</>}
+        <div className="table-footer">Showing {error || loading ? '—' : visible.length} of {students.length} students</div>
+      </section>
+      <footer className="page-footer">XploCode Infotech Private Limited<span>Student Management · Workshop project</span></footer>
+    </main>
+    <Routes>
+      <Route path="new" element={<StudentDialog key="add" mode="add" api={api} onSaved={saved} />} />
+      <Route path=":id" element={<StudentDialog key="view" mode="view" api={api} />} />
+      <Route path=":id/edit" element={<StudentDialog key="edit" mode="edit" api={api} onSaved={saved} />} />
+      <Route path=":id/delete" element={<StudentDialog key="delete" mode="delete" api={api} onDeleted={deleted} />} />
+    </Routes>
   </div>;
+}
+
+export function App({ config }) {
+  const demo = config.mode === 'demo';
+  const location = useLocation();
+  const [user, setUser] = useState(null);
+  const [sessionMessage, setSessionMessage] = useState('');
+  const api = useMemo(() => demo ? createDemoApi() : createApi(config, { onUnauthorized: () => { setUser(null); setSessionMessage('Your session has expired. Please sign in again.'); } }), [config, demo]);
+  const logout = () => { api.logout(); setUser(null); setSessionMessage(''); };
+  return <Routes>
+    <Route path="/login" element={user ? <Navigate to="/students" replace /> : <Login demo={demo} api={api} message={sessionMessage} onLogin={(account) => { setSessionMessage(''); setUser(account); }} />} />
+    <Route path="/students/*" element={user ? <Students api={api} demo={demo} user={user} onLogout={logout} /> : <Navigate to="/login" replace state={{ from: location.pathname }} />} />
+    <Route path="*" element={<Navigate to="/students" replace />} />
+  </Routes>;
 }

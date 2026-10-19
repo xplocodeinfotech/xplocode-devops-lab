@@ -26,9 +26,9 @@ Edit `public/config.json`, then refresh the development app:
 }
 ```
 
-- `demo`: labelled, in-memory sample records; no credentials or API requests.
+- `demo`: labelled, in-memory sample records; the login form accepts any non-blank username and password; no API requests.
 - `api`: username/password form and real HTTP requests to a conforming backend.
-  No backend exists yet, so this mode currently shows connection errors.
+  No real backend exists yet. Use the contract mock below, or expect connection errors.
 - `apiBaseUrl`: absolute HTTP(S) URL, optionally including a function prefix.
   The API service preserves the prefix and appends `/api/...`.
 - `requestTimeoutMs`: 1000–120000; default 15000. Mutations are never retried.
@@ -41,8 +41,20 @@ The frontend also requests it with `cache: 'no-store'`.
 
 The token is kept in memory and cleared on logout or protected 401 responses.
 Refreshing requires login again. Never put secrets into runtime configuration.
-This step intentionally uses a single page and dialogs, with no server-dependent
-client routes. Future routing must remain compatible with static hosting.
+Routing uses `HashRouter` (`#/login`, `#/students`, `#/students/new`, `#/students/:id`,
+`#/students/:id/edit`, `#/students/:id/delete`), so static hosts need no SPA rewrite rules.
+An `https://` page must use an `https://` API URL (localhost is exempt); the app reports this clearly.
+
+## Try API mode without a backend
+
+```powershell
+# terminal 1 (repo root): prints a generated password for user "learner"
+$env:CORS_ORIGIN='http://127.0.0.1:5173'; node api-contract/mock/server.mjs
+# terminal 2: set "mode": "api" in public/config.json, then
+npm.cmd run dev
+```
+
+The mock is in-memory and dev-only. Restore `"mode": "demo"` afterwards.
 
 ## Code map
 
@@ -50,8 +62,10 @@ client routes. Future routing must remain compatible with static hosting.
 - `src/config.js`: configuration validation.
 - `src/api.js`: centralized HTTP service and in-memory JWT handling.
 - `src/demo.js`: isolated frontend demo service.
-- `src/App.jsx`: login, directory, details and student forms.
+- `src/App.jsx`: routes, login, directory, and the details/add/edit/delete dialogs.
+- `public/brand/`: XploCode logo and fonts (dagger wordmark, Neue Montreal) copied from xplocode.com.
 - `src/styles.css`: responsive layout and shared visual styling.
 - `tests/services.test.js`: service and runtime configuration checks, using Node's built-in test runner.
+- `tests/mock-integration.test.js`: real HTTP tests of the API service against `api-contract/mock/server.mjs`.
 
 See [the manual checklist](../../docs/frontend-checkpoint.md) for the user checkpoint.

@@ -11,7 +11,7 @@ Scope: React frontend only. Complete and confirm this step before backend work.
 | Git | Available; no account changes needed for local review | `git --version` |
 | Modern browser | Yes | Chrome, Edge, Firefox, or Safari |
 | Internet | For dependency installation | npm registry access |
-| Docker, Java, Python, Angular CLI | No | Later checkpoints |
+| Docker, Java, Python, Angular CLI | No | Later checkpoints. Present here: Docker 29.7, Java 21, Maven 3.10, Python 3.15 (very new: FastAPI/driver support is `VERIFY`) |
 | Database or cloud account | No | Later checkpoints |
 
 Observed prerequisites on 2026-10-18: Node v24.20.0 and npm 11.19.0.
@@ -36,8 +36,8 @@ Open the URL manually in your browser. Stop the server with Ctrl+C when finished
 
 ## B. Review the frontend
 
-1. Confirm the branded welcome page displays a **Frontend demo** explanation.
-2. Click **Open demo workspace**. Expect four sample students and four departments.
+1. Confirm the login page shows the XploCode logo and wordmark (same fonts as xplocode.com), a **Demo mode** note, and username/password fields.
+2. Sign in with any username and password. Expect four sample students and four departments.
 3. Search for `Arun`. Expect one result. Clear the search and filter by CSE.
 4. Clear the filter. Open **View** on a student; confirm all five fields are shown.
 5. Click **Add student**. Try submitting empty required fields and an invalid email.
@@ -51,10 +51,10 @@ Open the URL manually in your browser. Stop the server with Ctrl+C when finished
 11. Test keyboard navigation: Tab through controls, open a dialog, and press Escape
     to close it. Use a narrow browser window to check the mobile layout; the table
     scrolls horizontally so actions and columns remain available.
-12. Log out. Confirm the welcome page returns.
-13. Refresh and reopen the demo. Expect the original four records; edits are not persisted.
+12. Note the address bar changes as you open dialogs (`#/students/new`, `#/students/2`, ...). Log out and confirm login returns; opening a `#/students/...` link while signed out goes to login.
+13. Refresh and sign in again. Expect the original four records; edits are not persisted.
 
-This is a UI simulation. The demo button is not a real login and has no password.
+This is a UI simulation. Demo login accepts any non-blank values and is not real authentication.
 Actual valid/invalid account authentication and database persistence will be
 verified after the backend exists.
 
@@ -76,9 +76,10 @@ Open it and repeat the essential add/edit/delete flow.
 ## D. Optional: inspect the future API connection
 
 Change `mode` to `api` in `public/config.json` and refresh the development app.
-Expect a username/password login form. With no backend running, submission should
-show a connection error, never silently switch to demo mode. Restore `mode` to
-`demo` for the current checkpoint.
+With no backend running, submitting the login form should show a connection error, never
+silently switch to demo mode. To try a working API, start the dev-only contract mock
+(`node api-contract/mock/server.mjs`, with `CORS_ORIGIN=http://127.0.0.1:5173`) and sign in as
+`learner` with the password it prints. Restore `mode` to `demo` afterwards.
 
 For a production build, change `dist/config.json` instead. Its modified timestamp
 and page refresh should be enough; there is no need to rebuild the frontend just

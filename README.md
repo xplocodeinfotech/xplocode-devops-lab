@@ -12,7 +12,7 @@ npm.cmd run dev
 ```
 
 Open the Local URL printed by Vite (normally http://127.0.0.1:5173).
-Click **Open demo workspace**. No credentials are required for this frontend preview.
+Sign in with any username and password (demo mode accepts any non-blank values).
 
 - [Current progress and next checkpoint](STATUS.md)
 - [Shared API baseline](CONTRACT.md)
@@ -20,7 +20,8 @@ Click **Open demo workspace**. No credentials are required for this frontend pre
 - [React frontend details](frontend/react/README.md)
 
 The frontend loads `frontend/react/public/config.json` before startup. The checked-in
-configuration explicitly selects demo mode. Demo records live in memory and reset
+configuration explicitly selects demo mode. To exercise real API mode without a backend, run the
+dev-only contract mock: `node api-contract/mock/server.mjs` (see [frontend/react/README.md](frontend/react/README.md)). Demo records live in memory and reset
 on refresh. Demo mode does not authenticate users or connect to a database.
 
 Do not start the next implementation phase until this frontend checkpoint has

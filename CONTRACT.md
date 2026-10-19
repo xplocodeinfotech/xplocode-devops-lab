@@ -39,5 +39,8 @@ logout clears it. A protected request returning 401 returns the user to login.
 Mutation requests are not retried automatically. A network failure may occur
 after a mutation commits: refresh the list before repeating that operation.
 
-Demo mode bypasses real authentication and simulates the student service in
+Browsers call the API cross-origin, so every backend must answer CORS preflight for a configured
+allowlist of origins (never `*`) and allow the `Authorization` and `Content-Type` headers.
+
+Demo mode bypasses real authentication (any non-blank username and password) and simulates the student service in
 memory. Its records are sample data, not backend or database verification.

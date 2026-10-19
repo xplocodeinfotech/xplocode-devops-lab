@@ -1,4 +1,6 @@
-export function validateConfig(config) {
+const localHosts = ['localhost', '127.0.0.1', '[::1]'];
+
+export function validateConfig(config, pageProtocol = globalThis.location?.protocol) {
   if (!config || !['demo', 'api'].includes(config.mode)) {
     throw new Error('config.json must set mode to "demo" or "api".');
   }
@@ -12,6 +14,9 @@ export function validateConfig(config) {
   }
   if (!['http:', 'https:'].includes(url.protocol) || url.search || url.hash || url.username || url.password) {
     throw new Error('apiBaseUrl must be HTTP(S), without credentials, query strings, or fragments.');
+  }
+  if (pageProtocol === 'https:' && url.protocol === 'http:' && !localHosts.includes(url.hostname)) {
+    throw new Error('This page uses HTTPS, so apiBaseUrl must also be HTTPS. Browsers block HTTP API calls from HTTPS pages.');
   }
   const requestTimeoutMs = config.requestTimeoutMs ?? 15000;
   if (!Number.isInteger(requestTimeoutMs) || requestTimeoutMs < 1000 || requestTimeoutMs > 120000) {

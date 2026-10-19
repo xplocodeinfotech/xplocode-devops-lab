@@ -15,6 +15,12 @@ test('runtime configuration preserves cloud prefixes and removes trailing slashe
   assert.throws(() => validateConfig({ ...config, requestTimeoutMs: -1 }));
 });
 
+test('an HTTPS page rejects a non-local HTTP API but allows localhost', () => {
+  assert.throws(() => validateConfig({ ...config, apiBaseUrl: 'http://api.example.com' }, 'https:'), /must also be HTTPS/);
+  assert.equal(validateConfig({ ...config, apiBaseUrl: 'http://localhost:8080' }, 'https:').apiBaseUrl, 'http://localhost:8080');
+  assert.equal(validateConfig({ ...config, apiBaseUrl: 'http://api.example.com' }, 'http:').apiBaseUrl, 'http://api.example.com');
+});
+
 test('configuration loads without cached content and reports missing files', async () => {
   const loaded = await loadConfig(async (url, options) => {
     assert.equal(url, '/config.json'); assert.equal(options.cache, 'no-store');
@@ -101,7 +107,8 @@ test('invalid successful JSON and missing login tokens fail clearly', async () =
 test('demo supports details and CRUD, rejects duplicate emails, and resets on a new instance', async () => {
   const api = createDemoApi();
   await assert.rejects(api.list(), /Enter the demo/);
-  await api.login();
+  await assert.rejects(api.login('', ''), /Enter a username/);
+  await api.login('learner', 'any-demo-value');
   assert.equal((await api.list()).length, 4);
   const created = await api.create({ name: 'Test Student', email: 'test@example.com', department: 'CSE', year: 1 });
   assert.equal(typeof created.id, 'number');
@@ -112,6 +119,6 @@ test('demo supports details and CRUD, rejects duplicate emails, and resets on a 
   await api.remove(created.id);
   await assert.rejects(api.get(created.id), /not found/);
   api.logout(); await assert.rejects(api.list(), /Enter the demo/);
-  const fresh = createDemoApi(); await fresh.login();
+  const fresh = createDemoApi(); await fresh.login('learner', 'any-demo-value');
   assert.equal((await fresh.list()).length, 4);
 });

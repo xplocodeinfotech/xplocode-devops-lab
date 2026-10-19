@@ -24,7 +24,10 @@ export function createDemoApi() {
     }
   };
   return {
-    async login() { signedIn = true; return { username: 'Workshop learner' }; },
+    async login(username, password) {
+      if (!String(username ?? '').trim() || !String(password ?? '')) throw new ApiError('Enter a username and password. Any values work in demo mode.', 400);
+      signedIn = true; return { username: String(username).trim() };
+    },
     logout() { signedIn = false; },
     async list() { authorize(); return structuredClone(students); },
     async get(id) { authorize(); return { ...find(id) }; },
