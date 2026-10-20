@@ -61,7 +61,6 @@ form>label{margin:18px 0}
 .toolbar{display:flex;gap:12px;justify-content:space-between;padding:0 28px 22px}
 .search-label{width:min(400px,100%)}
 .toolbar input,.toolbar select{margin:0}
-.filter-label{width:200px}
 .table-scroll{overflow-x:auto}
 table{width:100%;border-collapse:collapse;text-align:left;font-size:15px;white-space:nowrap}
 thead{background:var(--navy);color:#fff}
@@ -73,7 +72,6 @@ th:first-child,td:first-child{padding-left:28px}
 .student-avatar{height:40px;width:40px;flex-shrink:0;background:#e0f9fd;color:var(--navy);display:grid;place-items:center;border-radius:50%;font-size:13px;font-weight:700}
 .student-cell strong{display:block;color:var(--navy)}
 .student-cell div>span{display:block;color:var(--muted);font-size:13px;margin-top:3px}
-.department-badge{font-size:12px;font-weight:700;background:#ecebff;color:#2e2e8f;border-radius:999px;padding:4px 10px}
 .id-cell{color:var(--muted)}
 .row-actions{display:flex;gap:4px;justify-content:flex-end}
 .actions-heading{text-align:right;padding-right:28px}
@@ -97,7 +95,6 @@ dialog::backdrop{background:#00003e99;backdrop-filter:blur(3px)}
 .icon-button{background:transparent;color:var(--muted);font-size:26px;line-height:1;padding:2px 10px;border-radius:.5rem}
 .icon-button:hover{background:#f3f4f6;box-shadow:none}
 .dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:26px}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
 .record-id{font-size:13px;color:var(--muted)}
 
 .login-layout{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
@@ -139,10 +136,9 @@ dialog::backdrop{background:#00003e99;backdrop-filter:blur(3px)}
   .directory{border-radius:1.25rem}
   .directory-heading{padding:20px 16px 12px}
   .toolbar{padding:0 16px 18px;flex-wrap:wrap}
-  .search-label,.filter-label{width:100%}
+  .search-label{width:100%}
   .table-footer{padding:14px 16px}
   .page-footer{flex-direction:column;gap:6px}
-  .form-grid{grid-template-columns:1fr}
   dialog{padding:22px;border-radius:1.25rem}
   th,td{padding:14px 12px}
   th:first-child,td:first-child{padding-left:16px}

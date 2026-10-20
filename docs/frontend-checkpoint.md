@@ -37,13 +37,13 @@ Open the URL manually in your browser. Stop the server with Ctrl+C when finished
 ## B. Review the frontend
 
 1. Confirm the login page shows the XploCode logo and wordmark (same fonts as xplocode.com), a **Demo mode** note, and username/password fields.
-2. Sign in with any username and password. Expect four sample students and four departments.
-3. Search for `Arun`. Expect one result. Clear the search and filter by CSE.
-4. Clear the filter. Open **View** on a student; confirm all five fields are shown.
+2. Sign in with any username and password. Expect four sample students.
+3. Search for `Arun`. Expect one result. Clear the search.
+4. Open **View** on a student; confirm the ID, name, email and year are shown.
 5. Click **Add student**. Try submitting empty required fields and an invalid email.
-   The browser should prevent submission. Whitespace-only name/department is also rejected.
-6. Add a student with a new email, name, department, and year. Confirm it appears
-   and the total increases. Names/departments allow 100 characters; years are 1–4.
+   The browser should prevent submission. A whitespace-only name is also rejected.
+6. Add a student with a new email, name, and year. Confirm it appears
+   and the total increases. Names allow 100 characters; years are 1–4.
 7. Try another student with the same email. Expect an error with no duplicate record.
 8. Edit the student and confirm the changed values appear.
 9. Delete the student. Cancel once to confirm it stays, then confirm deletion.

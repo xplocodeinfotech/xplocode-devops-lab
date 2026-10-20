@@ -1,6 +1,6 @@
 # XploCode workshop
 
-- Work incrementally. The current checkpoint is React frontend only. Wait for the user's confirmation before starting backend, databases, Angular, CI/CD, or cloud deployment.
+- Work incrementally. The current checkpoint is React frontend + minimal Node.js/MySQL backend. Wait for the user's confirmation before starting Catalyst, GCP, other backends or databases, Angular, or CI/CD. Do only tasks required for the deployment demo; no extra tests or layers.
 - Read STATUS.md and CONTRACT.md at the beginning of a session, then inspect the current files and Git changes. Preserve unrelated changes.
 - Keep frontend API calls in its API service. Load public/config.json before API requests; never put secrets there.
 - Treat demo mode as an explicit frontend simulation. Never silently fall back to it when a real API fails.

@@ -4,7 +4,7 @@ Updated: 2026-10-18 (Asia/Calcutta).
 
 ## Current checkpoint
 
-React frontend only (revision 2, after review). Repository was initially empty, with no API contract,
+React frontend (reviewed) + minimal Node.js/MySQL backend (Step 2). See the Backend section below. Frontend revision 2 notes follow. Repository was initially empty, with no API contract,
 tests, or existing implementations to preserve. Do not begin the next implementation phase before the
 user confirms this checkpoint.
 
@@ -59,7 +59,33 @@ user confirms this checkpoint.
 - Python 3.15 is very new; FastAPI and database driver support is a `VERIFY` before the Python backend.
 - Nothing is committed to Git.
 
+## Backend (Step 2, simplified for the demo; executed 2026-10-20)
+
+- `docker-compose.yml` (repo root): MySQL 8.4 with the demo database and user. Compose syntax validated with `docker compose config`;
+  it was not started because an existing `mysql-db` container already uses port 3306 (Docker runs inside WSL here).
+- `database/mysql/`: standalone package (`schema.sql`, `seed.sql`, `npm run setup`). Running `setup` resets the demo: both tables are
+  recreated and the 3 sample students are added back. Demo login `learner` / `learner123`. **Passwords are plain text by decision (demo only, no hashing).**
+- `backend/nodejs`: Express 5 with 3 dependencies (express, mysql2, jsonwebtoken). Every setting has a default matching the compose
+  file, so no `.env` is needed locally. `JWT_SECRET` is required only when `NODE_ENV=production`. Startup checks the database and prints
+  a one-line fix for common mistakes.
+- Clean-copy student simulation PASSED (copy without `.env` or `node_modules`, following only the README): `npm run setup` (twice, safe),
+  start API, PowerShell block from the README (health, login, list, create, get, delete; wrong password 401; no token 401).
+- `npm run try` (backend script, added after a pasted multi-line PowerShell block lost its line breaks and failed): runs health, wrong-password 401, login, no-token 401, list, create, get, delete; prints a clear message if the API is down. Run against the local API: all checks passed.
+- **Student fields are now id, name, email, year** (department removed everywhere by decision, 2026-10-20): contract, openapi, mock, backend, MySQL, Catalyst notes/CSV and the React app (column, form field, filter, stat card, demo data). Emails are stored and returned in lower case (no separate Catalyst key column). After the change: frontend tests 14/14 pass, build passes, `npm run setup` and `npm run try` pass, and a headless Edge run against the real backend passed (list without department column, add with mixed-case email shown lower-case, edit year, delete). An old client that still sends `department` is accepted and the field is ignored.
+- **Zoho Catalyst Data Store adapter (`DB_PROVIDER=catalyst`) written, REST + OAuth refresh token + ZCQL, India data centre by default.** Verified against a local fake first (duplicates, quote and injection attempts rejected with 400, one statement per call, startup errors), then **against the user's real Catalyst project (India data centre, Development) on 2026-10-20**: startup check, `npm run try` passed, create with a mixed-case email stored lower case, duplicate email in another case 409, multi-column edit, edit to an existing email 409, apostrophe name 400, missing student 404, delete 204 then 404, final data back to the 3 sample students. This confirmed ZCQL SELECT, INSERT, UPDATE and DELETE work over the REST `/query` endpoint with the refresh-token flow, and that the five-scope string and no `redirect_uri` were sufficient. Still untested: the Production environment, other data centres, a concurrent create race, and the React app against this provider. MySQL path re-tested after the refactor (`npm run try` passes).
+- Friendly messages verified: wrong DB password, MySQL not reachable, missing database, production without `JWT_SECRET`
+  (backend and setup scripts).
+- React in API mode against this backend in headless Edge PASSED (bad password, login, create, delete, logout, deep link after logout).
+  In headless Chrome 155 typing into the add dialog failed in the automation (focus kept on the close button) while Edge worked; treated as a
+  test-browser quirk, not an app bug. This was not checked in a real, interactive Chrome.
+- Servers stopped, `dist/config.json` restored to demo. A stale API process from before the schema change was returning 500s until killed.
+  Restart the API after running `setup`.
+
+### Backend limitations
+- Not built: Docker image for the API, Catalyst entry point, Cloud Run, other databases. Catalyst notes are in `database/catalyst`.
+- Health returns 200 without checking the database (startup does check it). No rate limiting, pagination, or refresh tokens.
+- Plain-text demo password and a published demo login mean nothing here is suitable for real data.
+
 ## Next checkpoint
 
-Wait for review of this revision, then prepare Node.js + MySQL prerequisites (Docker image pull, ports)
-and implement the first backend against the shared contract and mock-tested frontend.
+Review the backend. Then Phase 3 (Catalyst function entry point + Data Store repository) or Phase 4 (Cloud Run Dockerfile + Firestore), whichever you choose first.

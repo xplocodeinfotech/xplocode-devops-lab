@@ -1,7 +1,12 @@
 # XploCode Student Management workshop
 
-A phased college workshop project. **Current checkpoint: React frontend only.**
-There is no backend, database, cloud deployment, Angular implementation, or CI/CD yet.
+A phased college workshop project. **Current checkpoint: React frontend + Node.js/MySQL backend (local).**
+There is no cloud deployment, Angular implementation, other backend or database, or CI/CD yet.
+
+Backend quick start (Docker and Node 22.12+; no `.env` needed): `docker compose up -d`, then in `database/mysql` run `npm.cmd ci` and
+`npm.cmd run setup`, then in `backend/nodejs` run `npm.cmd ci` and `npm.cmd start`. Demo login: `learner` / `learner123`.
+Details: [backend/nodejs/README.md](backend/nodejs/README.md).
+In the frontend `config.json` set `"mode": "api"` and `apiBaseUrl` to `http://localhost:8080`.
 
 Start with [the frontend prerequisite and verification guide](docs/frontend-checkpoint.md).
 

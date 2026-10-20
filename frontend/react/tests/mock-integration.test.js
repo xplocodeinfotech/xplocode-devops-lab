@@ -14,7 +14,7 @@ test.before(async () => {
 });
 test.after(() => server.close());
 
-const student = { name: 'Test Student', email: 'integration@example.com', department: 'CSE', year: 2 };
+const student = { name: 'Test Student', email: 'integration@example.com', year: 2 };
 const api = (onUnauthorized) => createApi(validateConfig({ mode: 'api', apiBaseUrl: `${base}/`, requestTimeoutMs: 5000 }), { onUnauthorized });
 
 test('health is public and CORS allows only the configured origin', async () => {

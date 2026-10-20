@@ -1,10 +1,10 @@
 import { ApiError } from './api.js';
 
 const sampleStudents = [
-  { id: 1, name: 'Arun Kumar', email: 'arun@example.com', department: 'CSE', year: 3 },
-  { id: 2, name: 'Priya Sharma', email: 'priya@example.com', department: 'ECE', year: 2 },
-  { id: 3, name: 'Meera Nair', email: 'meera@example.com', department: 'IT', year: 4 },
-  { id: 4, name: 'Kavin Raj', email: 'kavin@example.com', department: 'MECH', year: 1 },
+  { id: 1, name: 'Arun Kumar', email: 'arun@example.com', year: 3 },
+  { id: 2, name: 'Priya Sharma', email: 'priya@example.com', year: 2 },
+  { id: 3, name: 'Meera Nair', email: 'meera@example.com', year: 4 },
+  { id: 4, name: 'Kavin Raj', email: 'kavin@example.com', year: 1 },
 ];
 
 // Intentionally in memory. This is a UI preview, not authentication or a database.

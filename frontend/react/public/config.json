@@ -1,5 +1,5 @@
 {
-  "mode": "demo",
+  "mode": "api",
   "apiBaseUrl": "http://localhost:8080",
   "requestTimeoutMs": 15000
 }

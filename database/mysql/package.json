@@ -1,0 +1,18 @@
+{
+  "name": "xplocode-mysql-setup",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Schema and seed scripts for the MySQL demo database. Independent of any backend.",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "setup": "node apply.mjs && node seed.mjs",
+    "apply": "node apply.mjs",
+    "seed": "node seed.mjs"
+  },
+  "dependencies": {
+    "mysql2": "3.24.6"
+  }
+}

@@ -52,7 +52,7 @@ test('CRUD uses shared methods and handles the empty DELETE response', async () 
     calls.push([url, options]);
     return options.method === 'DELETE' ? new Response(null, { status: 204 }) : json({ id: 1 });
   } });
-  const student = { name: 'Arun', email: 'arun@example.com', department: 'CSE', year: 3 };
+  const student = { name: 'Arun', email: 'arun@example.com', year: 3 };
   await api.get(1); await api.create(student); await api.update(1, student);
   assert.equal(await api.remove(1), undefined);
   assert.deepEqual(calls.map(([, options]) => options.method), ['GET', 'POST', 'PUT', 'DELETE']);
@@ -110,7 +110,7 @@ test('demo supports details and CRUD, rejects duplicate emails, and resets on a 
   await assert.rejects(api.login('', ''), /Enter a username/);
   await api.login('learner', 'any-demo-value');
   assert.equal((await api.list()).length, 4);
-  const created = await api.create({ name: 'Test Student', email: 'test@example.com', department: 'CSE', year: 1 });
+  const created = await api.create({ name: 'Test Student', email: 'test@example.com', year: 1 });
   assert.equal(typeof created.id, 'number');
   assert.equal((await api.get(created.id)).name, 'Test Student');
   await assert.rejects(api.create({ ...created, email: 'TEST@example.com' }), /already exists/);

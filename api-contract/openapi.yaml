@@ -125,11 +125,10 @@ components:
   schemas:
     StudentInput:
       type: object
-      required: [name, email, department, year]
+      required: [name, email, year]
       properties:
         name: { type: string, minLength: 1, maxLength: 100 }
         email: { type: string, format: email, maxLength: 254 }
-        department: { type: string, minLength: 1, maxLength: 100 }
         year: { type: integer, minimum: 1, maximum: 4 }
     Student:
       allOf:

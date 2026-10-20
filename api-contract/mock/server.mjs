@@ -18,8 +18,8 @@ export function createMockServer({
 } = {}) {
   const secret = crypto.randomBytes(32);
   let students = [
-    { id: 1, name: 'Arun Kumar', email: 'arun@example.com', department: 'CSE', year: 3 },
-    { id: 2, name: 'Priya Sharma', email: 'priya@example.com', department: 'ECE', year: 2 },
+    { id: 1, name: 'Arun Kumar', email: 'arun@example.com', year: 3 },
+    { id: 2, name: 'Priya Sharma', email: 'priya@example.com', year: 2 },
   ];
   let nextId = 3;
 
@@ -45,7 +45,7 @@ export function createMockServer({
     const email = typeof body?.email === 'string' ? body.email.trim() : '';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) throw new HttpError(400, 'VALIDATION_ERROR', 'email must be a valid address.');
     if (!Number.isInteger(body?.year) || body.year < 1 || body.year > 4) throw new HttpError(400, 'VALIDATION_ERROR', 'year must be an integer from 1 to 4.');
-    return { name: text(body.name, 'name'), email, department: text(body.department, 'department'), year: body.year };
+    return { name: text(body.name, 'name'), email, year: body.year };
   };
   const assertUnique = (email, id) => {
     if (students.some((s) => s.id !== id && s.email.toLowerCase() === email.toLowerCase())) {

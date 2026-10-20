@@ -1,0 +1,19 @@
+-- Demo data for Catalyst Data Store, written in ZCQL (Catalyst's SQL-like query language).
+-- ZCQL cannot create tables: create `Students` and `Users` in the console first (see README.md), then run the statements below
+-- in the console's ZCQL query window (Cloud Scale > ZCQL). No CLI needed.
+-- Run ONE statement per execution: copy a single INSERT line, paste it alone in the ZCQL window, run it, then do the next.
+-- Tested in the console: a multi-row INSERT (VALUES (...), (...)) failed, and several statements pasted together and run at once
+-- also failed; a single statement worked. Strings use single quotes.
+-- Never run a statement twice: the unique columns will reject repeated rows.
+
+-- Demo login: username learner, password learner123 (plain text, demo only)
+INSERT INTO Users (username, password) VALUES ('learner', 'learner123');
+
+-- Sample students (student_id is the integer ID the API returns; emails are lower case)
+INSERT INTO Students (student_id, name, email, year) VALUES (1, 'Arun Kumar', 'arun@gmail.com', 3);
+INSERT INTO Students (student_id, name, email, year) VALUES (2, 'Priya Mohan', 'priya@outlook.com', 2);
+INSERT INTO Students (student_id, name, email, year) VALUES (3, 'Shantha lakshmi', 'shantha@zoho.com', 4);
+
+-- Check the result
+-- SELECT student_id, name, email, year FROM Students;
+-- SELECT username FROM Users;

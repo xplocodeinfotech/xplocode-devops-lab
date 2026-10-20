@@ -1,0 +1,25 @@
+# Local MySQL for the workshop demo. Start it with: docker compose up -d
+# The values below match the defaults in database/mysql and backend/nodejs, so no .env editing is needed locally.
+# Demo credentials only. Stop any other MySQL that already uses port 3306 first.
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: xplocode-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: studentdb
+      MYSQL_USER: gp_user
+      MYSQL_PASSWORD: gp_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  mysql_data:

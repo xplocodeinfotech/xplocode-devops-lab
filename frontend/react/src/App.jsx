@@ -3,7 +3,7 @@ import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } fr
 import { createApi } from './api.js';
 import { createDemoApi } from './demo.js';
 
-const emptyStudent = { name: '', email: '', department: '', year: 1 };
+const emptyStudent = { name: '', email: '', year: 1 };
 const initials = (name) => name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 const logoUrl = `${import.meta.env?.BASE_URL ?? '/'}brand/xplocode-logo.png`;
 
@@ -36,8 +36,8 @@ function StudentDialog({ mode, api, onSaved, onDeleted }) {
     event.preventDefault(); setError(''); setBusy(true);
     try {
       if (deleting) { await api.remove(student.id); onDeleted(student.id); return; }
-      const data = { name: student.name.trim(), email: student.email.trim(), department: student.department.trim(), year: Number(student.year) };
-      if (!data.name || !data.department) throw new Error('Name and department cannot be blank.');
+      const data = { name: student.name.trim(), email: student.email.trim(), year: Number(student.year) };
+      if (!data.name) throw new Error('Name cannot be blank.');
       const saved = mode === 'add' ? await api.create(data) : await api.update(student.id, data);
       onSaved(saved, mode);
     } catch (failure) { setError(failure.message); } finally { setBusy(false); }
@@ -53,7 +53,7 @@ function StudentDialog({ mode, api, onSaved, onDeleted }) {
         {readOnly && <p className="record-id">Student ID · {student.id}</p>}
         <label>Full name<input name="name" value={student.name} onChange={change} required maxLength={100} readOnly={readOnly} autoComplete="name" autoFocus={!readOnly} /></label>
         <label>Email address<input name="email" type="email" value={student.email} onChange={change} required maxLength={254} readOnly={readOnly} autoComplete="email" /></label>
-        <div className="form-grid"><label>Department<input name="department" value={student.department} onChange={change} required maxLength={100} readOnly={readOnly} placeholder="e.g. CSE" /></label><label>Year<select name="year" value={student.year} onChange={change} disabled={readOnly}>{years.map((year) => <option key={year} value={year}>Year {year}</option>)}</select></label></div>
+        <label>Year<select name="year" value={student.year} onChange={change} disabled={readOnly}>{years.map((year) => <option key={year} value={year}>Year {year}</option>)}</select></label>
         {error && <p className="error" role="alert">{error}</p>}
         <div className="dialog-actions"><button type="button" className="secondary" disabled={busy} onClick={close}>{readOnly ? 'Close' : 'Cancel'}</button>{!readOnly && <button disabled={busy}>{busy ? 'Saving…' : 'Save student'}</button>}</div>
       </form>}
@@ -92,7 +92,6 @@ function Students({ api, demo, user, onLogout }) {
   const navigate = useNavigate();
   const [students, setStudents] = useState([]);
   const [query, setQuery] = useState('');
-  const [department, setDepartment] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -105,8 +104,7 @@ function Students({ api, demo, user, onLogout }) {
     } catch (failure) { setError(failure.message); } finally { setLoading(false); }
   }
   useEffect(() => { refresh(); }, [api]);
-  const departments = [...new Set(students.map((student) => student.department))].sort();
-  const visible = students.filter((student) => (department === 'all' || student.department === department) && `${student.name} ${student.email} ${student.id}`.toLowerCase().includes(query.toLowerCase()));
+  const visible = students.filter((student) => `${student.name} ${student.email} ${student.id}`.toLowerCase().includes(query.toLowerCase()));
   const saved = (student, type) => {
     setStudents((current) => type === 'add' ? [...current, student] : current.map((item) => item.id === student.id ? student : item));
     setNotice(type === 'add' ? 'Student added successfully.' : 'Student updated successfully.'); setError(''); navigate('/students');
@@ -117,11 +115,11 @@ function Students({ api, demo, user, onLogout }) {
     <main className="content">
       <div className="page-heading"><div><p className="eyebrow">Student management</p><h1>Student directory</h1><p className="muted">View, add, edit and remove student records.</p></div><Link className="button" to="/students/new" onClick={() => setNotice('')}>＋ Add student</Link></div>
       {demo && <div className="demo-banner"><span className="demo-pill">Demo</span><span>Sample data held in memory. Records reset on refresh; no backend is connected.</span></div>}
-      <section className="stats" aria-label="Directory overview"><div className="stat-card"><span>Total students</span><strong>{students.length}</strong></div><div className="stat-card"><span>Departments</span><strong>{departments.length}</strong></div></section>
+      <section className="stats" aria-label="Directory overview"><div className="stat-card"><span>Total students</span><strong>{students.length}</strong></div></section>
       <section className="directory" aria-labelledby="directory-title"><div className="directory-heading"><h2 id="directory-title">All students <span className="count-badge">{students.length}</span></h2><button className="secondary" onClick={refresh} disabled={loading}>{loading ? 'Refreshing…' : '↻ Refresh'}</button></div>
-        <div className="toolbar"><label className="search-label"><span className="sr-only">Search students</span><input type="search" placeholder="Search by name, email or ID…" value={query} onChange={(event) => setQuery(event.target.value)} /></label><label className="filter-label"><span className="sr-only">Filter by department</span><select value={department} onChange={(event) => setDepartment(event.target.value)}><option value="all">All departments</option>{departments.map((item) => <option key={item}>{item}</option>)}</select></label></div>
+        <div className="toolbar"><label className="search-label"><span className="sr-only">Search students</span><input type="search" placeholder="Search by name, email or ID…" value={query} onChange={(event) => setQuery(event.target.value)} /></label></div>
         {notice && <p className="success" role="status">{notice}</p>}{error && <p className="error" role="alert">{error}</p>}
-        {loading ? <div className="empty-state" role="status">Loading student records…</div> : error ? <div className="empty-state">Unable to load or update records. Check the error above and refresh before repeating a change.</div> : <><div className="table-scroll"><table><thead><tr><th scope="col">Student</th><th scope="col">Department</th><th scope="col">Year</th><th scope="col">Student ID</th><th scope="col" className="actions-heading">Actions</th></tr></thead><tbody>{visible.map((student) => <tr key={student.id}><td><div className="student-cell"><span className="student-avatar">{initials(student.name)}</span><div><strong>{student.name}</strong><span>{student.email}</span></div></div></td><td><span className="department-badge">{student.department}</span></td><td>Year {student.year}</td><td className="id-cell">#{String(student.id).padStart(3, '0')}</td><td><div className="row-actions"><Link className="text-button" aria-label={`View ${student.name}`} to={`/students/${student.id}`}>View</Link><Link className="text-button" aria-label={`Edit ${student.name}`} to={`/students/${student.id}/edit`}>Edit</Link><Link className="text-button delete-link" aria-label={`Delete ${student.name}`} to={`/students/${student.id}/delete`}>Delete</Link></div></td></tr>)}</tbody></table></div>{visible.length === 0 && <div className="empty-state"><strong>{students.length ? 'No matching students' : 'No students yet'}</strong><p>{students.length ? 'Try a different search or department.' : 'Add your first student to get started.'}</p></div>}</>}
+        {loading ? <div className="empty-state" role="status">Loading student records…</div> : error ? <div className="empty-state">Unable to load or update records. Check the error above and refresh before repeating a change.</div> : <><div className="table-scroll"><table><thead><tr><th scope="col">Student</th><th scope="col">Year</th><th scope="col">Student ID</th><th scope="col" className="actions-heading">Actions</th></tr></thead><tbody>{visible.map((student) => <tr key={student.id}><td><div className="student-cell"><span className="student-avatar">{initials(student.name)}</span><div><strong>{student.name}</strong><span>{student.email}</span></div></div></td><td>Year {student.year}</td><td className="id-cell">#{String(student.id).padStart(3, '0')}</td><td><div className="row-actions"><Link className="text-button" aria-label={`View ${student.name}`} to={`/students/${student.id}`}>View</Link><Link className="text-button" aria-label={`Edit ${student.name}`} to={`/students/${student.id}/edit`}>Edit</Link><Link className="text-button delete-link" aria-label={`Delete ${student.name}`} to={`/students/${student.id}/delete`}>Delete</Link></div></td></tr>)}</tbody></table></div>{visible.length === 0 && <div className="empty-state"><strong>{students.length ? 'No matching students' : 'No students yet'}</strong><p>{students.length ? 'Try a different search.' : 'Add your first student to get started.'}</p></div>}</>}
         <div className="table-footer">Showing {error || loading ? '—' : visible.length} of {students.length} students</div>
       </section>
       <footer className="page-footer">XploCode Infotech Private Limited<span>Student Management · Workshop project</span></footer>
