@@ -5,12 +5,12 @@ info:
   description: |
     Initial frontend baseline. No backend is implemented yet. See CONTRACT.md.
     Browsers call the API cross-origin, so every backend must answer CORS preflight (OPTIONS)
-    for an allowlist of origins (never `*`) and allow the Authorization and Content-Type headers.
+    for an allowlist of origins (never `*`) and allow the X-Access-Token and Content-Type headers.
 servers:
   - url: http://localhost:8080
     description: Local development. Deployed backends use the apiBaseUrl from the frontend config.json.
 security:
-  - bearerAuth: []
+  - accessToken: []
 paths:
   /api/auth/login:
     post:
@@ -121,7 +121,11 @@ paths:
         '500': { $ref: '#/components/responses/Error' }
 components:
   securitySchemes:
-    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+    accessToken:
+      type: apiKey
+      in: header
+      name: X-Access-Token
+      description: The JWT from /api/auth/login. Authorization Bearer is not used because Zoho Catalyst's gateway rejects it.
   schemas:
     StudentInput:
       type: object

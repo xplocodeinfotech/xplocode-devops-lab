@@ -1,6 +1,6 @@
 const localHosts = ['localhost', '127.0.0.1', '[::1]'];
 
-export function validateConfig(config, pageProtocol = globalThis.location?.protocol) {
+export function validateConfig(config, pageProtocol = globalThis.location?.protocol, pageOrigin = globalThis.location?.origin) {
   if (!config || !['demo', 'api'].includes(config.mode)) {
     throw new Error('config.json must set mode to "demo" or "api".');
   }
@@ -9,8 +9,13 @@ export function validateConfig(config, pageProtocol = globalThis.location?.proto
   }
   const apiBaseUrl = config.apiBaseUrl.trim().replace(/\/+$/, '');
   let url;
-  try { url = new URL(apiBaseUrl); } catch {
-    throw new Error('apiBaseUrl must be an absolute HTTP or HTTPS URL.');
+  try {
+    // A root-relative function path keeps a Web Client Hosting build on its own project origin.
+    const sameOriginPath = apiBaseUrl.startsWith('/') && !apiBaseUrl.startsWith('//');
+    url = new URL(apiBaseUrl, sameOriginPath ? pageOrigin : undefined);
+    if (sameOriginPath && url.origin !== pageOrigin) throw new Error('Invalid same-origin path.');
+  } catch {
+    throw new Error('apiBaseUrl must be an absolute HTTP(S) URL or a root-relative path on the hosting origin.');
   }
   if (!['http:', 'https:'].includes(url.protocol) || url.search || url.hash || url.username || url.password) {
     throw new Error('apiBaseUrl must be HTTP(S), without credentials, query strings, or fragments.');
@@ -22,7 +27,7 @@ export function validateConfig(config, pageProtocol = globalThis.location?.proto
   if (!Number.isInteger(requestTimeoutMs) || requestTimeoutMs < 1000 || requestTimeoutMs > 120000) {
     throw new Error('requestTimeoutMs must be an integer between 1000 and 120000.');
   }
-  return { mode: config.mode, apiBaseUrl, requestTimeoutMs };
+  return { mode: config.mode, apiBaseUrl: url.href.replace(/\/+$/, ''), requestTimeoutMs };
 }
 
 export async function loadConfig(fetcher = fetch) {

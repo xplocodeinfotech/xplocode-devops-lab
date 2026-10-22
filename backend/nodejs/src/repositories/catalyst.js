@@ -10,6 +10,8 @@ import { HttpError } from '../errors.js';
 
 const STUDENTS = 'Students';
 const USERS = 'Users';
+const COUNTERS = 'Counters';
+const STUDENT_COUNTER = 'student_id';
 const PAGE = 300; // a ZCQL SELECT returns at most 300 rows
 
 export function createCatalystRepository(config) {
@@ -18,8 +20,8 @@ export function createCatalystRepository(config) {
   let tokenExpiresAt = 0;
 
   function assertConfigured() {
-    const missing = [['CATALYST_PROJECT_ID', c.projectId], ['CATALYST_CLIENT_ID', c.clientId],
-      ['CATALYST_CLIENT_SECRET', c.clientSecret], ['CATALYST_REFRESH_TOKEN', c.refreshToken]].filter(([, v]) => !v).map(([k]) => k);
+    const missing = [['DATASTORE_PROJECT_ID', c.projectId], ['DATASTORE_CLIENT_ID', c.clientId],
+      ['DATASTORE_CLIENT_SECRET', c.clientSecret], ['DATASTORE_REFRESH_TOKEN', c.refreshToken]].filter(([, v]) => !v).map(([k]) => k);
     if (missing.length) throw new Error(`DB_PROVIDER=catalyst needs these settings: ${missing.join(', ')}. See backend/nodejs/README.md.`);
   }
 
@@ -31,10 +33,10 @@ export function createCatalystRepository(config) {
     try {
       response = await fetch(`${c.accountsDomain}/oauth/v2/token`, { method: 'POST', body: form, signal: AbortSignal.timeout(15000) });
     } catch {
-      throw new Error(`Cannot reach Zoho at ${c.accountsDomain}. Check your internet connection and CATALYST_ACCOUNTS_DOMAIN.`);
+      throw new Error(`Cannot reach Zoho at ${c.accountsDomain}. Check your internet connection and DATASTORE_ACCOUNTS_DOMAIN.`);
     }
     const data = await response.json().catch(() => ({}));
-    if (!data.access_token) throw new Error(`Zoho refused the refresh token (${data.error ?? `HTTP ${response.status}`}). Check CATALYST_CLIENT_ID, CATALYST_CLIENT_SECRET, CATALYST_REFRESH_TOKEN and that CATALYST_ACCOUNTS_DOMAIN matches your data centre.`);
+    if (!data.access_token) throw new Error(`Zoho refused the refresh token (${data.error ?? `HTTP ${response.status}`}). Check DATASTORE_CLIENT_ID, DATASTORE_CLIENT_SECRET, DATASTORE_REFRESH_TOKEN and that DATASTORE_ACCOUNTS_DOMAIN matches your data centre.`);
     token = data.access_token;
     tokenExpiresAt = Date.now() + (Number(data.expires_in) || 3600) * 1000;
     return token;
@@ -51,7 +53,7 @@ export function createCatalystRepository(config) {
         signal: AbortSignal.timeout(15000),
       });
     } catch {
-      throw new Error(`Cannot reach the Catalyst API at ${c.apiDomain}. Check your internet connection and CATALYST_API_DOMAIN.`);
+      throw new Error(`Cannot reach the Catalyst API at ${c.apiDomain}. Check your internet connection and DATASTORE_API_DOMAIN.`);
     }
     if (response.status === 401 && retry) { token = undefined; return zcql(query, false); } // token expired early: refresh once
     const body = await response.json().catch(() => ({}));
@@ -92,9 +94,23 @@ export function createCatalystRepository(config) {
     const rows = await zcql(`SELECT student_id FROM ${STUDENTS} WHERE email=${text(email, 'email')}`);
     return rows.some((row) => Number(row.student_id) !== exceptId);
   };
+  // Every student ID is reserved by inserting a row into Counters (counter_name 'student_id:<n>', last_id <n>) BEFORE the
+  // student is created. counter_name is unique, so exactly one request can reserve a given number, and reservation rows are
+  // never deleted: an ID is therefore never issued twice, even after its student is deleted. A request that loses the race
+  // simply tries the next number. At startup the current highest student ID is reserved too (before any delete can happen).
+  const topReservedId = async () => Number((await zcql(`SELECT last_id FROM ${COUNTERS} ORDER BY last_id DESC LIMIT 1`))[0]?.last_id ?? 0);
+  const topStudentId = async () => Number((await zcql(`SELECT student_id FROM ${STUDENTS} ORDER BY student_id DESC LIMIT 1`))[0]?.student_id ?? 0);
+  async function reserve(id) {
+    try { await zcql(`INSERT INTO ${COUNTERS} (counter_name, last_id) VALUES ('${STUDENT_COUNTER}:${int(id)}', ${int(id)})`); } catch (error) {
+      if (isDuplicate(error)) return false; // someone else owns this number
+      throw error;
+    }
+    return true;
+  }
   const nextId = async () => {
-    const rows = await zcql(`SELECT student_id FROM ${STUDENTS} ORDER BY student_id DESC LIMIT 1`);
-    return rows[0] ? Number(rows[0].student_id) + 1 : 1;
+    let id = Math.max(await topReservedId(), await topStudentId()) + 1;
+    while (!(await reserve(id))) id += 1;
+    return id;
   };
   const duplicateEmail = () => new HttpError(409, 'DUPLICATE_EMAIL', 'A student with this email already exists.');
 
@@ -103,9 +119,13 @@ export function createCatalystRepository(config) {
     async check() {
       assertConfigured();
       await accessToken(); // fails with its own clear message if the OAuth settings are wrong
-      try { await zcql(`SELECT student_id FROM ${STUDENTS} LIMIT 1`); } catch (error) {
-        throw new Error(`Cannot read the "${STUDENTS}" table in Zoho Catalyst (${error.message}). Check CATALYST_PROJECT_ID and CATALYST_ENVIRONMENT, that the table exists with the columns in database/catalyst/README.md, and that the token has the ZohoCatalyst.zcql.CREATE scope.`);
+      for (const [table, column] of [[STUDENTS, 'student_id'], [COUNTERS, 'last_id']]) {
+        try { await zcql(`SELECT ${column} FROM ${table} LIMIT 1`); } catch (error) {
+          throw new Error(`Cannot read the "${table}" table in Zoho Catalyst (${error.message}). Check DATASTORE_PROJECT_ID and DATASTORE_ENVIRONMENT, that the table exists with the columns in database/catalyst/README.md, and that the token has the ZohoCatalyst.zcql.CREATE scope.`);
+        }
       }
+      const top = await topStudentId();
+      if (top) await reserve(top); // an already-reserved number is fine
     },
     close: async () => {},
 

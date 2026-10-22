@@ -1,5 +1,5 @@
 {
   "mode": "api",
-  "apiBaseUrl": "http://localhost:8080",
+  "apiBaseUrl": "https://project-rainfall-60092012573.development.catalystserverless.in/server/student_api",
   "requestTimeoutMs": 15000
 }

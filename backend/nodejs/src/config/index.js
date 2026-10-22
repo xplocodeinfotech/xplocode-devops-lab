@@ -6,6 +6,9 @@ try { process.loadEnvFile(); } catch { /* no .env file: defaults are fine */ }
 const list = (value) => (value ?? '').split(',').map((item) => item.trim()).filter(Boolean);
 
 export function getConfig(env = process.env) {
+  // Catalyst reserves names starting with CATALYST_ for function settings, so the DATASTORE_ names are used there.
+  // The old CATALYST_ names still work in a local .env.
+  const store = (name) => env[`DATASTORE_${name}`] ?? env[`CATALYST_${name}`];
   const production = env.NODE_ENV === 'production';
   // Demo-only signing key for local runs. In production a real JWT_SECRET must be set.
   const jwtSecret = env.JWT_SECRET ?? (production ? undefined : 'local-demo-secret-not-for-production');
@@ -25,14 +28,14 @@ export function getConfig(env = process.env) {
     },
     // Only used when DB_PROVIDER=catalyst (Zoho Catalyst Data Store over its REST API). Defaults are the India data centre.
     catalyst: {
-      projectId: env.CATALYST_PROJECT_ID,
-      clientId: env.CATALYST_CLIENT_ID,
-      clientSecret: env.CATALYST_CLIENT_SECRET,
-      refreshToken: env.CATALYST_REFRESH_TOKEN,
-      environment: env.CATALYST_ENVIRONMENT ?? 'Development',
-      apiDomain: (env.CATALYST_API_DOMAIN ?? 'https://api.catalyst.zoho.in').replace(/\/+$/, ''),
-      accountsDomain: (env.CATALYST_ACCOUNTS_DOMAIN ?? 'https://accounts.zoho.in').replace(/\/+$/, ''),
-      redirectUri: env.CATALYST_REDIRECT_URI,
+      projectId: store('PROJECT_ID'),
+      clientId: store('CLIENT_ID'),
+      clientSecret: store('CLIENT_SECRET'),
+      refreshToken: store('REFRESH_TOKEN'),
+      environment: store('ENVIRONMENT') ?? 'Development',
+      apiDomain: (store('API_DOMAIN') ?? 'https://api.catalyst.zoho.in').replace(/\/+$/, ''),
+      accountsDomain: (store('ACCOUNTS_DOMAIN') ?? 'https://accounts.zoho.in').replace(/\/+$/, ''),
+      redirectUri: store('REDIRECT_URI'),
     },
   };
 }

@@ -1,7 +1,9 @@
 node_modules/
 dist/
+dist-catalyst/
 .env
 .env.*
 !.env.example
 *.log
 .DS_Store
+catalyst-function.zip

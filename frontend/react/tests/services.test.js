@@ -21,6 +21,16 @@ test('an HTTPS page rejects a non-local HTTP API but allows localhost', () => {
   assert.equal(validateConfig({ ...config, apiBaseUrl: 'http://api.example.com' }, 'http:').apiBaseUrl, 'http://api.example.com');
 });
 
+test('same-origin function paths resolve on the hosting project and reject origin escapes', () => {
+  const origin = 'https://workshop.example';
+  const resolved = validateConfig({ ...config, apiBaseUrl: '/server/student_api/' }, 'https:', origin);
+  assert.equal(resolved.apiBaseUrl, `${origin}/server/student_api`);
+  for (const path of ['//other.example/server/student_api', '/\\other.example/server/student_api', 'server/student_api', '/server/student_api?token=x', '/server/student_api#login']) {
+    assert.throws(() => validateConfig({ ...config, apiBaseUrl: path }, 'https:', origin));
+  }
+  assert.throws(() => validateConfig({ ...config, apiBaseUrl: '/server/student_api' }, 'https:', undefined));
+});
+
 test('configuration loads without cached content and reports missing files', async () => {
   const loaded = await loadConfig(async (url, options) => {
     assert.equal(url, '/config.json'); assert.equal(options.cache, 'no-store');
@@ -39,11 +49,11 @@ test('real API login sends credentials once and protects subsequent requests wit
   await api.login('learner', 'test-only-input');
   await api.list();
   assert.equal(calls[0].url, 'https://example.com/functions/students/api/auth/login');
-  assert.equal(calls[0].options.headers.Authorization, undefined);
+  assert.equal(calls[0].options.headers['X-Access-Token'], undefined);
   assert.deepEqual(JSON.parse(calls[0].options.body), { username: 'learner', password: 'test-only-input' });
-  assert.equal(calls[1].options.headers.Authorization, 'Bearer test-token');
+  assert.equal(calls[1].options.headers['X-Access-Token'], 'test-token');
   api.logout(); await api.list();
-  assert.equal(calls[2].options.headers.Authorization, undefined);
+  assert.equal(calls[2].options.headers['X-Access-Token'], undefined);
 });
 
 test('CRUD uses shared methods and handles the empty DELETE response', async () => {
@@ -73,12 +83,12 @@ test('a protected 401 clears the token and signals the expired session', async (
   let authorization;
   const api = createApi(config, { onUnauthorized: () => { expired++; }, fetcher: async (url, options) => {
     if (url.endsWith('/login')) return json({ token: 'test-token' });
-    authorization = options.headers.Authorization;
+    authorization = options.headers['X-Access-Token'];
     return json({ error: { message: 'Expired token.' } }, 401);
   } });
   await api.login('learner', 'test-only-input');
   await assert.rejects(api.list(), /Expired token/);
-  assert.equal(authorization, 'Bearer test-token');
+  assert.equal(authorization, 'test-token');
   await assert.rejects(api.list());
   assert.equal(authorization, undefined); assert.equal(expired, 2);
 });

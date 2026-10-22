@@ -13,7 +13,7 @@ export function createApi(config, { fetcher = fetch, onUnauthorized = () => {} }
         headers: {
           Accept: 'application/json',
           ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-          ...(authenticated && token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(authenticated && token ? { 'X-Access-Token': token } : {}),
         },
         ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
         signal: controller.signal,

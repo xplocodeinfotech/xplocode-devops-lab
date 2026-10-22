@@ -1,5 +1,5 @@
 -- Demo data for Catalyst Data Store, written in ZCQL (Catalyst's SQL-like query language).
--- ZCQL cannot create tables: create `Students` and `Users` in the console first (see README.md), then run the statements below
+-- ZCQL cannot create tables: create `Students`, `Users` and `Counters` in the console first (see README.md), then run the statements below
 -- in the console's ZCQL query window (Cloud Scale > ZCQL). No CLI needed.
 -- Run ONE statement per execution: copy a single INSERT line, paste it alone in the ZCQL window, run it, then do the next.
 -- Tested in the console: a multi-row INSERT (VALUES (...), (...)) failed, and several statements pasted together and run at once

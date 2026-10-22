@@ -11,7 +11,13 @@ function Brand() {
   return <Link className="brand" to="/students" aria-label="XploCode home"><img src={logoUrl} alt="" width="55" height="55" /><span className="brand-name">XploCode</span></Link>;
 }
 
-function StudentDialog({ mode, api, onSaved, onDeleted }) {
+// Keyed by mode and ID, so moving between student URLs starts with fresh state instead of the previous student.
+function StudentDialog(props) {
+  const { id } = useParams();
+  return <StudentDialogBody key={`${props.mode}-${id}`} {...props} />;
+}
+
+function StudentDialogBody({ mode, api, onSaved, onDeleted }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const dialog = useRef(null);

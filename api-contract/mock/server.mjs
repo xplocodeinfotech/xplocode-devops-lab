@@ -42,7 +42,7 @@ export function createMockServer({
       if (!trimmed || trimmed.length > 100) throw new HttpError(400, 'VALIDATION_ERROR', `${field} must be 1-100 characters.`);
       return trimmed;
     };
-    const email = typeof body?.email === 'string' ? body.email.trim() : '';
+    const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) throw new HttpError(400, 'VALIDATION_ERROR', 'email must be a valid address.');
     if (!Number.isInteger(body?.year) || body.year < 1 || body.year > 4) throw new HttpError(400, 'VALIDATION_ERROR', 'year must be an integer from 1 to 4.');
     return { name: text(body.name, 'name'), email, year: body.year };
@@ -82,7 +82,8 @@ export function createMockServer({
     const match = path.match(/^\/api\/students(?:\/([^/]+))?$/);
     if (!match) throw new HttpError(404, 'NOT_FOUND', 'Route not found.');
     const header = req.headers.authorization ?? '';
-    if (!header.startsWith('Bearer ') || !verify(header.slice(7))) throw new HttpError(401, 'UNAUTHORIZED', 'Missing, invalid or expired token.');
+    const token = req.headers['x-access-token'] ?? (header.startsWith('Bearer ') ? header.slice(7) : '');
+    if (!token || !verify(token)) throw new HttpError(401, 'UNAUTHORIZED', 'Missing, invalid or expired token.');
     const id = match[1] === undefined ? undefined : /^\d+$/.test(match[1]) ? Number(match[1]) : 0;
     if (id === undefined) {
       if (req.method === 'GET') return send(200, students);
@@ -117,7 +118,7 @@ export function createMockServer({
     if (origin && allowedOrigins.includes(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Vary', 'Origin');
-      res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+      res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Access-Token');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     }
     if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }

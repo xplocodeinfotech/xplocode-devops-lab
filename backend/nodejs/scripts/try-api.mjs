@@ -9,7 +9,7 @@ async function call(label, method, path, { body, token, expect } = {}) {
   try {
     response = await fetch(base + path, {
       method,
-      headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...(token ? { 'X-Access-Token': token } : {}) },
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch {

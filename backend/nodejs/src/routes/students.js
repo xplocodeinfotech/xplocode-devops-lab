@@ -3,8 +3,10 @@ import { Router } from 'express';
 export function studentRoutes(students, auth) {
   const router = Router();
   router.use('/students', (req, _res, next) => {
+    // X-Access-Token is the contract header: Zoho Catalyst's gateway rejects any Authorization header it cannot validate.
+    // Authorization: Bearer is still accepted for hosts without that restriction.
     const header = req.headers.authorization ?? '';
-    auth.verify(header.startsWith('Bearer ') ? header.slice(7) : '');
+    auth.verify(req.headers['x-access-token'] ?? (header.startsWith('Bearer ') ? header.slice(7) : ''));
     next();
   });
   router.get('/students', async (_req, res) => res.json(await students.list()));
